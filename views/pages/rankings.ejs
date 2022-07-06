@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<meta charset="utf-8">
+		<title>Rankings</title>
+		<style>
+			h2{
+				display: inline-block;
+				width: 8rem;
+			}
+			a {
+				padding: 0.5rem;
+				border: 1px solid black;
+				margin: 1rem;
+				margin-top: 2rem;
+				display: block;
+				width: 8rem;
+				text-align: center;
+				font-weight: bolder;
+				font-size: 14pt;
+			}
+		</style>
+	</head>
+	<body>
+		<a href="/">Enter Race</a>
+		<h1>Rankings</h1>
+		<ol>
+		<% players.forEach((p)=> { %>
+			<li>
+				<h2>
+					<%= p.name %>
+				</h2>
+				(<%= p.elo %>)
+			</li>
+			<hr />
+		<% }) %>
+	</ul>
+	</body>
+</html>

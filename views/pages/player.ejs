@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<meta charset="utf-8">
+		<title><%= player.name %></title>
+		<script>
+		<%
+		function addFormat(pos){
+			pos = parseInt(pos);
+			if(pos === 1){
+				return "<span class='first'>1</span>"
+			}
+			else if(pos < 4){
+				return `<span class='podium'>${pos}</span>`
+			}
+			else if(pos > 4){
+				return `<span class='bad'>${pos}</span>`
+			}
+			else if(pos > 9){
+				return `<span class='awful'>${pos}</span>`
+			}
+			return `${pos}`;
+		}
+		function formatChange(change){
+			if(change > 0){
+				return `<span class="green">+${change}</span>`
+			}
+			else if(change < 0){
+				return `<span class="red">${change}</span>`
+			}
+			return `${change}`;
+		}
+		%>
+		</script>
+		<style>
+			*{
+				font-family: sans-serif;
+			}
+			h3{
+				display: inline-block;
+				margin: 0;
+			}
+			h2, h5{
+				display: inline-block;
+				width: 6.5rem;
+			}
+			h5{
+				font-weight: normal;
+				font-size: 14pt;
+			}
+			body > a {
+				padding: 0.5rem;
+				border: 1px solid black;
+				margin: 1rem;
+				margin-top: 2rem;
+				display: block;
+				width: 8rem;
+				text-align: center;
+				font-weight: bolder;
+				font-size: 14pt;
+			}
+			table, tr, thead, th{
+				padding: 1rem;
+				font-weight: normal;
+			}
+			th{
+				border: 1px solid black;
+			}
+			.first{
+				font-weight: bolder;
+				color: gold;
+			}
+			.podium{
+				font-weight: bold;
+			}
+			.bad{
+				color: red;
+			}
+			.awful{
+				color: darkred;
+				text-decoration: line-through;
+			}
+			.green{
+				color: green;
+			}
+			.red{
+				color: red;
+			}
+		</style>
+	</head>
+	<body>
+		<h1><%= player.name %></h1>
+		<div>
+			<h3>Current Elo:</h3> <%= Math.round(player.elo[player.elo.length - 1]) %>
+		</div>
+		<div>
+			<h3>Highest Elo:</h3> <%= Math.round(Math.max(...player.elo)) %>
+		</div>
+		<table>
+			<thead><tr>
+				<th>Date</th>
+				<th>Track</th>
+				<th>Position</th>
+				<th>Elo (before)</th>
+				<th>Elo (after)</th>
+				<th>Elo (change)</th>
+			</tr></thead>
+			<tbody>
+				<% races.forEach((r, i)=> { %>
+					<tr>
+						<th><%= new Date(r.date).toLocaleString().split(',')[0] %></th>
+						<th><%= r.track %></th>
+						<th><%- addFormat(r.result.filter(p => p.name === player.name)[0].position + 1) %></th>
+						<th><%= Math.round(player.elo[i]) %></th>
+						<th><%= Math.round(player.elo[i + 1]) %></th>
+						<th><%- formatChange(Math.round(player.elo[i + 1] - player.elo[i])) %></th>
+					</tr>
+				<% }) %>
+
+			</tbody>
+		</table>
+	</body>
+</html>

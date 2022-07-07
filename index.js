@@ -5,8 +5,8 @@ let ejs = require('ejs');
 // const MultiElo = require('multi-elo').MultiElo;
 const MultiElo = require('./elo/index.js').MultiElo;
 const MultiEloMario = new MultiElo({
-	s: 1.5,
-	d: 100,
+	s: 1.35,
+	d: 50,
 	k: 32,
 	verbose: false
 });
@@ -66,6 +66,28 @@ const addElo = (player, elo) => new Promise((resolve, reject) => {
 	}).catch(reject);
 });
 
+const race = async (players) => {
+	const scoreboard = new Array(12);
+	players.forEach((player, i) => {
+		scoreboard[player.position] = {name: player.name, elo: player.elo};
+	});
+	let comElo = 500 + (4 - players.length) * 50;
+	for (let i=11; i >= 0; i--){
+		if(!scoreboard[i]){
+			scoreboard[i] = {name: "COM", elo: comElo}
+			comElo += 50;
+		}
+	}
+
+	const initialShiftedElo = MultiEloMario.getNewRatings(scoreboard.map(p => p.elo));
+	for(i in scoreboard){
+		if(scoreboard[i].name !== "COM"){
+			await addElo(scoreboard[i].name, initialShiftedElo[i]);
+		}
+	}
+	return initialShiftedElo;
+}
+
 mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 	console.log("Connected to database");
 	const app = express()
@@ -78,15 +100,50 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 		});
 	});
 
+	app.get("/player/:player", (req, res) => {
+		Player.find({name: req.params.player}, (err, players) => {
+			Race.find({result: {
+				$elemMatch: { name: req.params.player }
+			}}, (err2, races) => {
+				res.render("pages/player", {
+					player: players[0],
+					races: races
+				});
+			});
+		});
+	});
+
 	app.get('/rankings', (req, res) => {
 		Player.find({}, (err, players) => {
 			res.render('pages/rankings', {
 				players: players.map(p => ({
 					name: p.name,
-					elo: Math.round(p.elo[p.elo.length - 1])
+					elo: Math.round(p.elo[p.elo.length - 1]),
+					races: p.elo.length - 1,
 				})).sort((a, b) => b.elo - a.elo)
 			});
 		});
+	});
+
+	app.get("/replay", (req, res) => {
+		const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+		if(ip === "::1"){
+			Race.find({}, async (err, races) => {
+				for(r in races){
+					const players = races[r].result;
+					for(i in players){
+						const elo = await getElo(players[i].name);
+						players[i].elo = elo;
+					}
+					const shift = await race(players);
+					console.log(players.sort((a,b) => a.position - b.position).map(p => [p.position + 1, -1 * (p.elo - shift[p.position])]))
+				}
+				res.send("Done.");
+			})
+		}
+		else{
+			res.status(401).send("Sike Bitch");
+		}
 	});
 
 	app.get("/resetRaces", (req, res) => {
@@ -108,7 +165,7 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 				INITIAL_PLAYERS.forEach((player, i) => {
 					new Player({
 						name: player.name,
-						elo: [player.elo]
+						elo: [1500]//[player.elo]
 					}).save();
 				});
 				res.send("Done.")
@@ -138,24 +195,7 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 			result: players
 		}).save();
 
-		const scoreboard = new Array(12);
-		players.forEach((player, i) => {
-			scoreboard[player.position] = {name: player.name, elo: player.elo};
-		});
-		let comElo = 500 + (4 - players.length) * 50;
-		for (let i=11; i >= 0; i--){
-			if(!scoreboard[i]){
-				scoreboard[i] = {name: "COM", elo: comElo}
-				comElo += 50;
-			}
-		}
-
-		const initialShiftedElo = MultiEloMario.getNewRatings(scoreboard.map(p => p.elo));
-		for(i in scoreboard){
-			if(scoreboard[i].name !== "COM"){
-				await addElo(scoreboard[i].name, initialShiftedElo[i]);
-			}
-		}
+		await race(players);
 
 		res.redirect("/");
 	});

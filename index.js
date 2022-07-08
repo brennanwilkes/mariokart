@@ -88,6 +88,8 @@ const race = async (players) => {
 	return initialShiftedElo;
 }
 
+
+
 mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 	console.log("Connected to database");
 	const app = express()
@@ -123,6 +125,41 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 				})).sort((a, b) => b.elo - a.elo)
 			});
 		});
+	});
+
+	app.get("/graphData", (req, res) => {
+		Player.find({}, (err, playersData) => {
+			Race.find({}, (err2, races) => {
+				const data = {};
+				const players = {};
+				playersData.forEach((player, i) => {
+					data[player.name] = [{x: 0, y: 1500}];
+					players[player.name] = player;
+					playersData[i].elo = playersData[i].elo.slice(1);
+				});
+				races.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).forEach((race, index) => {
+					// console.log(index, race.result, race.track)
+					race.result.forEach((result, j) => {
+						data[result.name] = [
+							...(data[result.name]),
+							{x: index + 1, y: players[result.name].elo[0]}
+						];
+						players[result.name].elo = players[result.name].elo.slice(1);
+					});
+
+				});
+
+				res.json({
+					data,
+					races: ["",...(races.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map(r => r.track))]
+				});
+			});
+		});
+
+	});
+
+	app.get('/graphs', (req, res) => {
+		res.render("pages/charts");
 	});
 
 	app.get("/replay", (req, res) => {

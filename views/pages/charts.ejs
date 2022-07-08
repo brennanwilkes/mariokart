@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+	<head>
+		<meta charset="utf-8">
+		<title>Rankings</title>
+		<style>
+			*{
+				font-family: sans-serif;
+			}
+			h2, h5{
+				display: inline-block;
+				width: 6.5rem;
+			}
+			h5{
+				font-weight: normal;
+				font-size: 14pt;
+			}
+			body > a {
+				padding: 0.5rem;
+				border: 1px solid black;
+				margin: 1rem;
+				margin-top: 2rem;
+				display: block;
+				width: 8rem;
+				text-align: center;
+				font-weight: bolder;
+				font-size: 14pt;
+			}
+			a{
+				color: black;
+			}
+			a > h2 {
+				text-decoration: underline;
+			}
+			canvas{
+				width: 80vw;
+				height: 60vh;
+			}
+		</style>
+		<script src="https://cdn.jsdelivr.net/npm/chart.js@3.8.0/dist/chart.min.js"></script>
+		<script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+		<script>
+
+			const COLOURS = {
+				Brennan: "yellow",
+				Brandon: "black",
+				Darren: "lightblue",
+				Dillan: "red",
+				Cassidy: "green",
+				Marly: "purple",
+				Sean: "darkblue",
+				Santi: "darkgrey"
+			}
+
+			function onReady(){
+				fetch("/graphData").then(async resp => {
+					const skipped = (ctx, value) => ctx.p0.skip || ctx.p1.skip ? value : undefined;
+
+					const json = await resp.json();
+					const data = json.data;
+					const ctx = document.getElementById('rankings').getContext('2d');
+					const myChart = new Chart(ctx, {
+						type: 'scatter',
+						data: {
+							labels: json.races,
+							datasets: Object.keys(data).map(player => ({
+								label: player,
+								showLine: true,
+								data: data[player],
+								borderColor: COLOURS[player],
+								backgroundColor: COLOURS[player],
+								segment: {
+									borderDash: (ctx) => Math.abs(ctx.p0.x - ctx.p1.x) > 100 ? [5, 25] : undefined,
+								},
+								spanGaps: true
+							}))
+						},
+						options: {
+							scales: {
+								x: {
+									ticks: {
+										labels: json.races
+									}
+								}
+							}
+						}
+					});
+				}).catch(console.error);
+			}
+		</script>
+
+	</head>
+
+	<body style="overflow: hidden;" onload="onReady()">
+		<canvas id="rankings"></canvas>
+	</body>
+</html>

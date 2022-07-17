@@ -89,7 +89,7 @@
 			<div>
 				<h3>Best Tracks:</h3>
 				<ol>
-					<% sortedTracks(races).reverse().slice(0,3).forEach((t)=> { %>
+					<% sortedTracks(races).reverse().slice(0,5).forEach((t)=> { %>
 						<li>
 							<a href="/track/<%= t.name %>">
 								<%= t.name %>
@@ -101,7 +101,7 @@
 			<div>
 				<h3>Most Significant Tracks:</h3>
 				<ol>
-					<% tracks.sort((a,b) => (a.elo[a.elo.length - 1] - b.elo[b.elo.length - 1])).reverse().slice(0,3).forEach((t)=> { %>
+					<% tracks.sort((a,b) => (a.elo[a.elo.length - 1] - b.elo[b.elo.length - 1])).reverse().slice(0,5).forEach((t)=> { %>
 						<li>
 							<a href="/track/<%= t.name %>">
 								<%= t.name %>
@@ -113,7 +113,7 @@
 			<div>
 				<h3>Worst Tracks:</h3>
 				<ol>
-					<% sortedTracks(races).slice(0,3).forEach((t, i)=> { %>
+					<% sortedTracks(races).slice(0,5).forEach((t, i)=> { %>
 						<li value="<%= sortedTracks(races).length - i %>">
 							<a href="/track/<%= t.name %>">
 								<%= t.name %>
@@ -125,7 +125,7 @@
 			<div>
 				<h3>Least Significant Tracks:</h3>
 				<ol>
-					<% tracks.sort((a,b) => (a.elo[a.elo.length - 1] - b.elo[b.elo.length - 1])).slice(0,3).forEach((t, i)=> { %>
+					<% tracks.sort((a,b) => (a.elo[a.elo.length - 1] - b.elo[b.elo.length - 1])).slice(0,5).forEach((t, i)=> { %>
 						<li value="<%= tracks.length - i %>">
 							<a href="/track/<%= t.name %>">
 								<%= t.name %>

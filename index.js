@@ -71,6 +71,10 @@ const addElo = (player, elo, trackElo) => new Promise((resolve, reject) => {
 	}).catch(reject);
 });
 
+function absSqrt(val){
+	return (val > 0 ? 1 : -1) * Math.sqrt(Math.abs(val));
+}
+
 const getAveragePosition = (races, player) => races.map(r => r.result).flat().filter(r => r.name === player).map(r => r.position).reduce((a, b) => a + b, 0) / races.filter(r => r.result.some(p => p.name === player)).length;
 
 const race = async (players, trackName) => {
@@ -110,8 +114,9 @@ const race = async (players, trackName) => {
 			totalComps += 1;
 		}
 	}
-	const offset = (0 - (totalShift / totalComps));
-	const adjusted = Math.sqrt(Math.abs(offset * 30)) * (offset > 0 ? 1 : -1);
+	const offset = (1 - Math.abs(totalShift / totalComps)) * 4 + absSqrt((-1 - (totalShift / totalComps))) / 2;
+	console.log((1 - Math.abs(totalShift / totalComps)) * 4, absSqrt((-1 - (totalShift / totalComps))) / 2)
+	const adjusted = absSqrt(offset * 30);
 
 	await new Promise((resolve, reject) => {
 		Track.updateOne({name: track.name}, {elo: [...(track.elo), track.elo[track.elo.length - 1] + adjusted]}, (err, doc) => {
@@ -242,8 +247,13 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 					console.log(`${Math.round(r/races.length*100)}%`)
 					// console.log(players.sort((a,b) => a.position - b.position).map(p => [p.position + 1, -1 * (p.elo - shift[p.position])]))
 				}
-				console.log("Done.")
-				res.send("Done.");
+				Track.find({}, (e, ts) => {
+					ts.forEach((t, i) => {
+						console.log(t.name, t.elo);
+						console.log("Done.")
+					});
+					res.send("Done.");
+				})
 			})
 		}
 		else{

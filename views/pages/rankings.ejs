@@ -99,7 +99,7 @@
 				</ol>
 			</div>
 			<div>
-				<h3>Most Important Tracks:</h3>
+				<h3>Most Significant Tracks:</h3>
 				<ol>
 					<% tracks.sort((a,b) => (a.elo[a.elo.length - 1] - b.elo[b.elo.length - 1])).reverse().slice(0,3).forEach((t)=> { %>
 						<li>
@@ -123,7 +123,7 @@
 				</ol>
 			</div>
 			<div>
-				<h3>Least Important Tracks:</h3>
+				<h3>Least Significant Tracks:</h3>
 				<ol>
 					<% tracks.sort((a,b) => (a.elo[a.elo.length - 1] - b.elo[b.elo.length - 1])).slice(0,3).forEach((t, i)=> { %>
 						<li value="<%= tracks.length - i %>">

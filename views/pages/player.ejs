@@ -6,9 +6,13 @@
 		<script>
 		<%
 
+		function fBT(races){
+			return races.filter(r => (track === "All") || r.track === track);
+		}
+
 		function calcTopX(races, x){
 			let total = 0;
-			races.map(r => r.result).flat().forEach((res, i) => {
+			fBT(races).map(r => r.result).flat().forEach((res, i) => {
 				if(res.name === player.name && res.position <= x){
 					total += 1;
 				}
@@ -40,6 +44,7 @@
 			}
 			return `${change}`;
 		}
+
 		%>
 		</script>
 		<style>
@@ -107,11 +112,79 @@
 			<h3>Highest Elo:</h3> <%= Math.round(Math.max(...player.elo)) %>
 		</div>
 		<div>
-			<h3>Race wins:</h3> <%= calcTopX(races, 0) %> (<%= Math.round(calcTopX(races, 0) / races.length * 100) %>%)
+			<h3>Race wins:</h3> <%= calcTopX(races, 0) %> (<%= Math.round(calcTopX(races, 0) / fBT(races).length * 100) %>%)
 		</div>
 		<div>
-			<h3>Top Fours:</h3> <%= calcTopX(races, 3) %> (<%= Math.round(calcTopX(races, 3) / races.length * 100) %>%)
+			<h3>Top Fours:</h3> <%= calcTopX(races, 3) %> (<%= Math.round(calcTopX(races, 3) / fBT(races).length * 100) %>%)
 		</div>
+		<div>
+			<h3>Average finish:</h3> <%= Math.round(fBT(races).map(r => r.result).flat().filter(r => r.name === player.name).map(r => r.position).reduce((a, b) => a + b + 1, 0) / fBT(races).length * 10) / 10 %>
+		</div>
+		<br />
+		<form action="<%= player.name %>">
+			<select name="track" id="track">
+				<option>All</option>
+				<option>Baby Park</option>
+				<option>Cheese Land</option>
+				<option>Excitebike Arena</option>
+				<option>Yoshi Valley</option>
+				<option>Animal Crossing</option>
+				<option>Big Blue</option>
+				<option>Bone-Dry Dunes</option>
+				<option>Bowser's Castle (Wii U)</option>
+				<option>Cheep Cheep Beach</option>
+				<option>Choco Mountain</option>
+				<option>Cloudtop Cruise</option>
+				<option>Coconut Mall</option>
+				<option>DK Jungle</option>
+				<option>Dolphin Shoals</option>
+				<option>Donut Plains 3</option>
+				<option>Dragon Driftway</option>
+				<option>Dry Dry Desert</option>
+				<option>Electrodrome</option>
+				<option>Grumble Volcano</option>
+				<option>Hyrule Circuit</option>
+				<option>Ice Ice Outpost</option>
+				<option>Koopa Cape</option>
+				<option>Mario Circuit</option>
+				<option>Mario Circuit (GBA)</option>
+				<option>Mario Circuit (Wii U)</option>
+				<option>Mario Kart Stadium</option>
+				<option>Moo Moo Meadows</option>
+				<option>Mount Wario</option>
+				<option>Music Park</option>
+				<option>Mute City</option>
+				<option>Neo Bowser City</option>
+				<option>Ninja Hideaway</option>
+				<option>Paris Promenade</option>
+				<option>Piranha Plant Slide</option>
+				<option>Rainbow Road (N64)</option>
+				<option>Rainbow Road (SNES)</option>
+				<option>Rainbow Road (Wii U)</option>
+				<option>Ribbon Road</option>
+				<option>Royal Raceway</option>
+				<option>Sherbet Land (GCN)</option>
+				<option>Shroom Ridge</option>
+				<option>Shy Guy Falls</option>
+				<option>Sky Garden</option>
+				<option>Sunshine Airport</option>
+				<option>Super Bell Subway</option>
+				<option>Sweet Sweet Canyon</option>
+				<option>Thwomp Ruins</option>
+				<option>Tick-Tock Clock</option>
+				<option>Toad Circuit</option>
+				<option>Toad Harbor</option>
+				<option>Toad's Turnpike</option>
+				<option>Tokyo Blur 1</option>
+				<option>Twisted Mansion</option>
+				<option>Wario Stadium (DS)</option>
+				<option>Wario's Gold Mine</option>
+				<option>Water Park</option>
+				<option>Wild Woods</option>
+				<option>Yoshi Circuit</option>
+			</select>
+			<input type="submit" value="Filter">
+		</form>
 		<table>
 			<thead><tr>
 				<th>Date</th>
@@ -122,14 +195,22 @@
 				<th>Elo (change)</th>
 			</tr></thead>
 			<tbody>
-				<% races.forEach((r, i)=> { %>
+				<% races.map((r, i) => {
+					if((track === "All") || r.track === track){
+						return {
+							i,
+							r
+						}
+					}
+					return undefined;
+				}).filter(r => !!r).forEach(o => { %>
 					<tr>
-						<th><%= new Date(r.date).toLocaleString().split(',')[0] %></th>
-						<th><%= r.track %></th>
-						<th><%- addFormat(r.result.filter(p => p.name === player.name)[0].position + 1) %></th>
-						<th><%= Math.round(player.elo[i]) %></th>
-						<th><%= Math.round(player.elo[i + 1]) %></th>
-						<th><%- formatChange(Math.round(player.elo[i + 1] - player.elo[i])) %></th>
+						<th><%= new Date(o.r.date).toLocaleString().split(',')[0] %></th>
+						<th><%= o.r.track %></th>
+						<th><%- addFormat(o.r.result.filter(p => p.name === player.name)[0].position + 1) %></th>
+						<th><%= Math.round(player.elo[o.i]) %></th>
+						<th><%= Math.round(player.elo[o.i + 1]) %></th>
+						<th><%- formatChange(Math.round(player.elo[o.i + 1] - player.elo[o.i])) %></th>
 					</tr>
 				<% }) %>
 

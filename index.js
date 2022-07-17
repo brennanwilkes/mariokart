@@ -103,13 +103,15 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 	});
 
 	app.get("/player/:player", (req, res) => {
+		const track = req.query.track ?? "All";
 		Player.find({name: req.params.player}, (err, players) => {
 			Race.find({result: {
 				$elemMatch: { name: req.params.player }
 			}}, (err2, races) => {
 				res.render("pages/player", {
 					player: players[0],
-					races: races
+					races: races,
+					track
 				});
 			});
 		});
@@ -117,12 +119,14 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 
 	app.get('/rankings', (req, res) => {
 		Player.find({}, (err, players) => {
-			res.render('pages/rankings', {
-				players: players.map(p => ({
-					name: p.name,
-					elo: Math.round(p.elo[p.elo.length - 1]),
-					races: p.elo.length - 1,
-				})).sort((a, b) => b.elo - a.elo)
+			Race.find({}, (err2, races) => {
+				res.render('pages/rankings', {
+					players: players.map(p => ({
+						name: p.name,
+						elo: Math.round(p.elo[p.elo.length - 1]),
+						races: Math.round((p.elo.length - 1) / races.length * 100),
+					})).sort((a, b) => b.elo - a.elo)
+				});
 			});
 		});
 	});
@@ -138,7 +142,6 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 					playersData[i].elo = playersData[i].elo.slice(1);
 				});
 				races.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).forEach((race, index) => {
-					// console.log(index, race.result, race.track)
 					race.result.forEach((result, j) => {
 						data[result.name] = [
 							...(data[result.name]),

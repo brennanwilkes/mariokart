@@ -70,7 +70,7 @@
 								borderColor: COLOURS[player],
 								backgroundColor: COLOURS[player],
 								segment: {
-									borderDash: (ctx) => Math.abs(ctx.p0.x - ctx.p1.x) > 100 ? [5, 25] : undefined,
+									borderDash: (ctx) => Math.abs(ctx.p0.x - ctx.p1.x) > 25 ? [5, 25] : undefined,
 								},
 								spanGaps: true
 							}))

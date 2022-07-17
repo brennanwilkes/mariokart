@@ -26,12 +26,15 @@ const RaceSchema = new mongoose.Schema({
 });
 const Race = mongoose.model('Race', RaceSchema);
 
+
+const Track = mongoose.model('Track', PlayerSchema);
+
 const INITIAL_PLAYERS = [
 	{name: "Brennan", elo: 1200},
 	{name: "Brandon", elo: 1250},
+	{name: "Cassidy", elo: 1350},
 	{name: "Darren", elo: 1250},
 	{name: "Dillan", elo: 1400},
-	{name: "Cassidy", elo: 1350},
 	{name: "Marly", elo: 1200},
 	{name: "Santi", elo: 1200},
 	{name: "Sean", elo: 1250},
@@ -53,8 +56,10 @@ const getElo = (player, all) => new Promise((resolve, reject) => {
 	});
 });
 
-const addElo = (player, elo) => new Promise((resolve, reject) => {
+const addElo = (player, elo, trackElo) => new Promise((resolve, reject) => {
 	getElo(player, true).then(elos => {
+		const ratio = trackElo / 100;
+		elo = elos[elos.length - 1] + ((elo - elos[elos.length - 1]) * ratio);
 		Player.updateOne({name: player}, {elo: [...elos, elo]}, (err, doc) => {
 			if(err){
 				reject(err);
@@ -66,7 +71,9 @@ const addElo = (player, elo) => new Promise((resolve, reject) => {
 	}).catch(reject);
 });
 
-const race = async (players) => {
+const getAveragePosition = (races, player) => races.map(r => r.result).flat().filter(r => r.name === player).map(r => r.position).reduce((a, b) => a + b, 0) / races.filter(r => r.result.some(p => p.name === player)).length;
+
+const race = async (players, trackName) => {
 	const scoreboard = new Array(12);
 	players.forEach((player, i) => {
 		scoreboard[player.position] = {name: player.name, elo: player.elo};
@@ -79,10 +86,48 @@ const race = async (players) => {
 		}
 	}
 
+	const raceHistory = await new Promise((resolve, reject) => {
+		Race.find({}, (err, doc) => {
+			if(err) reject(err);
+			resolve(doc);
+		});
+	});
+
+	const track = await new Promise((resolve, reject) => {
+		Track.findOne({name: trackName}, (err, doc) => {
+			if(err) reject(err);
+			resolve(doc);
+		})
+	});
+
 	const initialShiftedElo = MultiEloMario.getNewRatings(scoreboard.map(p => p.elo));
+
+	let totalShift = 0;
+	let totalComps = 0;
 	for(i in scoreboard){
 		if(scoreboard[i].name !== "COM"){
-			await addElo(scoreboard[i].name, initialShiftedElo[i]);
+			totalShift += (i - getAveragePosition(raceHistory, scoreboard[i].name))
+			totalComps += 1;
+		}
+	}
+	const offset = (0 - (totalShift / totalComps));
+	const adjusted = Math.sqrt(Math.abs(offset * 30)) * (offset > 0 ? 1 : -1);
+
+	await new Promise((resolve, reject) => {
+		Track.updateOne({name: track.name}, {elo: [...(track.elo), track.elo[track.elo.length - 1] + adjusted]}, (err, doc) => {
+			if(err){
+				reject(err);
+			}
+			else{
+				resolve();
+			}
+		});
+	});
+
+
+	for(i in scoreboard){
+		if(scoreboard[i].name !== "COM"){
+			await addElo(scoreboard[i].name, initialShiftedElo[i], track.elo[track.elo.length - 1] + adjusted);
 		}
 	}
 	return initialShiftedElo;
@@ -117,15 +162,32 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 		});
 	});
 
+
+	app.get("/track/:track", (req, res) => {
+		Track.find({name: req.params.track}, (err, track) => {
+			Race.find({track: req.params.track}, (err2, races) => {
+				res.render("pages/track", {
+					races,
+					track: track[0]
+				});
+			});
+		});
+	});
+
+
 	app.get('/rankings', (req, res) => {
 		Player.find({}, (err, players) => {
 			Race.find({}, (err2, races) => {
-				res.render('pages/rankings', {
-					players: players.map(p => ({
-						name: p.name,
-						elo: Math.round(p.elo[p.elo.length - 1]),
-						races: Math.round((p.elo.length - 1) / races.length * 100),
-					})).sort((a, b) => b.elo - a.elo)
+				Track.find({}, (err3, tracks) => {
+					res.render('pages/rankings', {
+						players: players.map(p => ({
+							name: p.name,
+							elo: Math.round(p.elo[p.elo.length - 1]),
+							races: Math.round((p.elo.length - 1) / races.length * 100),
+						})).sort((a, b) => b.elo - a.elo),
+						races,
+						tracks
+					});
 				});
 			});
 		});
@@ -170,14 +232,17 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 		if(ip === "::1"){
 			Race.find({}, async (err, races) => {
 				for(r in races){
+					// if(r > 10){break;}
 					const players = races[r].result;
 					for(i in players){
 						const elo = await getElo(players[i].name);
 						players[i].elo = elo;
 					}
-					const shift = await race(players);
-					console.log(players.sort((a,b) => a.position - b.position).map(p => [p.position + 1, -1 * (p.elo - shift[p.position])]))
+					const shift = await race(players, races[r].track);
+					console.log(`${Math.round(r/races.length*100)}%`)
+					// console.log(players.sort((a,b) => a.position - b.position).map(p => [p.position + 1, -1 * (p.elo - shift[p.position])]))
 				}
+				console.log("Done.")
 				res.send("Done.");
 			})
 		}
@@ -198,6 +263,68 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 		}
 	});
 
+
+		const tracks = [
+			"Baby Park",
+			"Cheese Land",
+			"Excitebike Arena",
+			"Yoshi Valley",
+			"Animal Crossing",
+			"Big Blue",
+			"Bone-Dry Dunes",
+			"Bowser's Castle (Wii U)",
+			"Cheep Cheep Beach",
+			"Choco Mountain",
+			"Cloudtop Cruise",
+			"Coconut Mall",
+			"DK Jungle",
+			"Dolphin Shoals",
+			"Donut Plains 3",
+			"Dragon Driftway",
+			"Dry Dry Desert",
+			"Electrodrome",
+			"Grumble Volcano",
+			"Hyrule Circuit",
+			"Ice Ice Outpost",
+			"Koopa Cape",
+			"Mario Circuit",
+			"Mario Circuit (GBA)",
+			"Mario Circuit (Wii U)",
+			"Mario Kart Stadium",
+			"Moo Moo Meadows",
+			"Mount Wario",
+			"Music Park",
+			"Mute City",
+			"Neo Bowser City",
+			"Ninja Hideaway",
+			"Paris Promenade",
+			"Piranha Plant Slide",
+			"Rainbow Road (N64)",
+			"Rainbow Road (SNES)",
+			"Rainbow Road (Wii U)",
+			"Ribbon Road",
+			"Royal Raceway",
+			"Sherbet Land (GCN)",
+			"Shroom Ridge",
+			"Shy Guy Falls",
+			"Sky Garden",
+			"Sunshine Airport",
+			"Super Bell Subway",
+			"Sweet Sweet Canyon",
+			"Thwomp Ruins",
+			"Tick-Tock Clock",
+			"Toad Circuit",
+			"Toad Harbor",
+			"Toad's Turnpike",
+			"Tokyo Blur 1",
+			"Twisted Mansion",
+			"Wario Stadium (DS)",
+			"Wario's Gold Mine",
+			"Water Park",
+			"Wild Woods",
+			"Yoshi Circuit"
+		];
+
 	app.get("/reset", (req, res) => {
 		const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
 		if(ip === "::1"){
@@ -208,13 +335,22 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 						elo: [1500]//[player.elo]
 					}).save();
 				});
-				res.send("Done.")
-			})
+				Track.deleteMany({}, () => {
+					tracks.forEach((t, i) => {
+						new Track({
+							name: t,
+							elo: [100],
+
+						}).save();
+					});
+					res.send("Done.")
+				});
+			});
 		}
 		else{
 			res.status(401).send("Sike Bitch");
 		}
-	})
+	});
 
 	app.get('/race', async (req, res) => {
 		const players = Object.keys(req.query).filter(k => k !== "track").map(player => ({
@@ -235,7 +371,7 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 			result: players
 		}).save();
 
-		await race(players);
+		await race(players, track);
 
 		res.redirect("/");
 	});

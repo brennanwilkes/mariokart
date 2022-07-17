@@ -15,7 +15,11 @@
 				font-weight: normal;
 				font-size: 14pt;
 			}
-			body > a {
+			h3{
+				display: inline-block;
+				margin: 0;
+			}
+			nav > a {
 				padding: 0.5rem;
 				border: 1px solid black;
 				margin: 1rem;
@@ -32,13 +36,108 @@
 			a > h2 {
 				text-decoration: underline;
 			}
+			nav{
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+			}
+			.horizontal{
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+				justify-content: space-between;
+			}
 		</style>
+		<script>
+		<%
+
+		function sortedTracks(races){
+			let valid = races;//.filter(r => r.result.some(p => p.name === player.name));
+			let scores = {};
+			valid.forEach((r, i) => {
+				r.result.forEach((p, i) => {
+					scores[r.track] = [...((scores[r.track]) ?? []), p.position];
+				});
+			});
+
+			let averages = [];
+			Object.keys(scores).forEach((t, i) => {
+				const avg = ( 4 - (scores[t].reduce((a, b) => a + b, 0) / scores[t].length));
+				averages = [
+					...averages,
+					{
+						name: t,
+						average: avg * Math.pow(scores[t].length + 2, 0.35)
+					}
+				]
+			});
+			return averages.sort((a,b) => a.average - b.average);
+		}
+		%>
+		</script>
 	</head>
 	<body>
-		<a href="/">Enter Race</a>
-		<a href="/graphs">Graphs</a>
-		<h1>Rankings</h1>
+		<nav>
+			<a href="/">Enter Race</a>
+			<a href="/graphs">Graphs</a>
+		</nav>
+		<h1>Stats</h1>
+		<div>
+			<h3>Total Races:</h3> <%= races.length %>
+		</div>
+		<div class="horizontal">
+			<div>
+				<h3>Best Tracks:</h3>
+				<ol>
+					<% sortedTracks(races).reverse().slice(0,3).forEach((t)=> { %>
+						<li>
+							<a href="/track/<%= t.name %>">
+								<%= t.name %>
+							</a>
+						</li>
+					<% }) %>
+				</ol>
+			</div>
+			<div>
+				<h3>Most Important Tracks:</h3>
+				<ol>
+					<% tracks.sort((a,b) => (a.elo[a.elo.length - 1] - b.elo[b.elo.length - 1])).reverse().slice(0,3).forEach((t)=> { %>
+						<li>
+							<a href="/track/<%= t.name %>">
+								<%= t.name %>
+							</a>
+						</li>
+					<% }) %>
+				</ol>
+			</div>
+			<div>
+				<h3>Worst Tracks:</h3>
+				<ol>
+					<% sortedTracks(races).slice(0,3).forEach((t, i)=> { %>
+						<li value="<%= sortedTracks(races).length - i %>">
+							<a href="/track/<%= t.name %>">
+								<%= t.name %>
+							</a>
+						</li>
+					<% }) %>
+				</ol>
+			</div>
+			<div>
+				<h3>Least Important Tracks:</h3>
+				<ol>
+					<% tracks.sort((a,b) => (a.elo[a.elo.length - 1] - b.elo[b.elo.length - 1])).slice(0,3).forEach((t, i)=> { %>
+						<li value="<%= tracks.length - i %>">
+							<a href="/track/<%= t.name %>">
+								<%= t.name %>
+							</a>
+						</li>
+					<% }) %>
+				</ol>
+			</div>
+		</div>
+		<br />
 		<ol>
+		<h1>Rankings</h1>
 		<% players.forEach((p)=> { %>
 			<li>
 				<a href="/player/<%= p.name %>"><h2>

@@ -30,16 +30,24 @@
 				margin: 1rem;
 				margin-top: 2rem;
 				display: block;
-				width: 8rem;
+				min-width: 8rem;
 				text-align: center;
 				font-weight: bolder;
 				font-size: 14pt;
 			}
+			nav{
+				display: flex;
+				flex-direction: row;
+				align-items: center;
+			}
+
 		</style>
 	</head>
 	<body>
-		<a href="/rankings">View Rankings</a>
-		<a href="/graphs">Graphs</a>
+		<nav>
+			<a href="/rankings">View Rankings</a>
+			<a href="/graphs">Graphs</a>
+		</nav>
 		<h1>Enter Race Results</h1>
 		<form action="./race">
 			<select name="track" id="track">
@@ -105,9 +113,9 @@
 			</select><br />
 			<label for="Brennan">Brennan:</label>	<input min="1" max="12" type="number" id="Brennan" name="Brennan"><br>
 			<label for="Brandon">Brandon:</label>	<input min="1" max="12" type="number" id="Brandon" name="Brandon"><br>
+			<label for="Cassidy">Cassidy:</label>	<input min="1" max="12" type="number" id="Cassidy" name="Cassidy"><br>
 			<label for="Darren">Darren:</label>		<input min="1" max="12" type="number" id="Darren" name="Darren"><br>
 			<label for="Dillan">Dillan:</label>		<input min="1" max="12" type="number" id="Dillan" name="Dillan"><br>
-			<label for="Cassidy">Cassidy:</label>	<input min="1" max="12" type="number" id="Cassidy" name="Cassidy"><br>
 			<label for="Marly">Marly:</label>		<input min="1" max="12" type="number" id="Marly" name="Marly"><br>
 			<label for="Santi">Santi:</label>		<input min="1" max="12" type="number" id="Santi" name="Santi"><br>
 			<label for="Sean">Sean:</label>			<input min="1" max="12" type="number" id="Sean" name="Sean"><br>

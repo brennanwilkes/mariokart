@@ -5,6 +5,16 @@
 		<title><%= player.name %></title>
 		<script>
 		<%
+
+		function calcTopX(races, x){
+			let total = 0;
+			races.map(r => r.result).flat().forEach((res, i) => {
+				if(res.name === player.name && res.position <= x){
+					total += 1;
+				}
+			});
+			return total;
+		}
 		function addFormat(pos){
 			pos = parseInt(pos);
 			if(pos === 1){
@@ -95,6 +105,12 @@
 		</div>
 		<div>
 			<h3>Highest Elo:</h3> <%= Math.round(Math.max(...player.elo)) %>
+		</div>
+		<div>
+			<h3>Race wins:</h3> <%= calcTopX(races, 0) %> (<%= Math.round(calcTopX(races, 0) / races.length * 100) %>%)
+		</div>
+		<div>
+			<h3>Top Fours:</h3> <%= calcTopX(races, 3) %> (<%= Math.round(calcTopX(races, 3) / races.length * 100) %>%)
 		</div>
 		<table>
 			<thead><tr>

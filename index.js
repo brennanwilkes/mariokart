@@ -107,16 +107,32 @@ const race = async (players, trackName) => {
 	const initialShiftedElo = MultiEloMario.getNewRatings(scoreboard.map(p => p.elo));
 
 	let totalShift = 0;
+	let netShift = 0;
+	let pos = [false, false, false, false];
 	let totalComps = 0;
 	for(i in scoreboard){
 		if(scoreboard[i].name !== "COM"){
-			totalShift += (i - getAveragePosition(raceHistory, scoreboard[i].name))
+			netShift += (parseInt(i) - getAveragePosition(raceHistory, scoreboard[i].name))
+			totalShift += Math.abs(parseInt(i) - getAveragePosition(raceHistory, scoreboard[i].name))
+			if(parseInt(i) < 4){
+				pos[parseInt(i)] = true;
+			}
 			totalComps += 1;
 		}
 	}
-	const offset = (1 - Math.abs(totalShift / totalComps)) * 4 + absSqrt((-1 - (totalShift / totalComps))) / 2;
-	console.log((1 - Math.abs(totalShift / totalComps)) * 4, absSqrt((-1 - (totalShift / totalComps))) / 2)
-	const adjusted = absSqrt(offset * 30);
+	const offset = (2 - Math.abs(totalShift / totalComps)) + absSqrt((-1 - (netShift / totalComps))) / 4;
+	let adjusted = absSqrt(offset * 30);
+
+	if(pos.reduce((acc, nxt, i) => acc && (nxt || (i+1 > totalComps)), true)){
+		adjusted += 6;
+	}
+
+	if(track.name === "Baby Park"){
+		console.log(1 - Math.abs(totalShift / totalComps));
+		console.log(pos.reduce((acc, nxt, i) => acc && (nxt || (i+1 > totalComps)), true) ? "perfect" : "")
+		console.log((-1 - (netShift / totalComps)))
+	}
+
 
 	await new Promise((resolve, reject) => {
 		Track.updateOne({name: track.name}, {elo: [...(track.elo), track.elo[track.elo.length - 1] + adjusted]}, (err, doc) => {

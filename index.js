@@ -5,11 +5,17 @@ let ejs = require('ejs');
 // const MultiElo = require('multi-elo').MultiElo;
 const MultiElo = require('./elo/index.js').MultiElo;
 const MultiEloMario = new MultiElo({
-	s: 1.35,
-	d: 50,
-	k: 32,
+	s: 1.1,
+	d: 200,
+	k: 64,
 	verbose: false
 });
+// const MultiEloMarioInternal = new MultiElo({
+// 	s: 1.5,
+// 	d: 200,
+// 	k: 64,
+// 	verbose: false
+// });
 
 require('dotenv').config();
 
@@ -82,11 +88,11 @@ const race = async (players, trackName) => {
 	players.forEach((player, i) => {
 		scoreboard[player.position] = {name: player.name, elo: player.elo};
 	});
-	let comElo = 500 + (4 - players.length) * 50;
+	let comElo = 700 + (4 - players.length) * 100;
 	for (let i=11; i >= 0; i--){
 		if(!scoreboard[i]){
 			scoreboard[i] = {name: "COM", elo: comElo}
-			comElo += 50;
+			comElo += 100;
 		}
 	}
 
@@ -105,6 +111,11 @@ const race = async (players, trackName) => {
 	});
 
 	const initialShiftedElo = MultiEloMario.getNewRatings(scoreboard.map(p => p.elo));
+	// const playerShiftedElo = MultiEloMarioInternal.getNewRatings(players.map(p => p.elo)).map((e, i) => e - players[i].elo);
+	// const playerExpectedScores = MultiEloMarioLinear.getExpectedScores(players.map(p => p.elo));
+	// let playerExpectedScores = MultiEloMarioLinear.getExpectedScores(players.map(p => p.elo));
+	// playerExpectedMultiplers = playerExpectedScores.map(v => 1 / Math.abs(1/playerExpectedScores.length - v)/100)
+	// console.log(playerExpectedScores, playerExpectedMultiplers)
 
 	let totalShift = 0;
 	let netShift = 0;
@@ -127,13 +138,6 @@ const race = async (players, trackName) => {
 		adjusted += 6;
 	}
 
-	if(track.name === "Baby Park"){
-		console.log(1 - Math.abs(totalShift / totalComps));
-		console.log(pos.reduce((acc, nxt, i) => acc && (nxt || (i+1 > totalComps)), true) ? "perfect" : "")
-		console.log((-1 - (netShift / totalComps)))
-	}
-
-
 	await new Promise((resolve, reject) => {
 		Track.updateOne({name: track.name}, {elo: [...(track.elo), track.elo[track.elo.length - 1] + adjusted]}, (err, doc) => {
 			if(err){
@@ -146,9 +150,13 @@ const race = async (players, trackName) => {
 	});
 
 
+	let playerIndex = 0;
 	for(i in scoreboard){
 		if(scoreboard[i].name !== "COM"){
+			// await addElo(scoreboard[i].name, initialShiftedElo[i] + playerShiftedElo[playerIndex], track.elo[track.elo.length - 1] + adjusted);
+			// await addElo(scoreboard[i].name, players[playerIndex].elo + (initialShiftedElo[i] - players[playerIndex].elo) * playerExpectedScores[playerIndex], track.elo[track.elo.length - 1] + adjusted);
 			await addElo(scoreboard[i].name, initialShiftedElo[i], track.elo[track.elo.length - 1] + adjusted);
+			playerIndex += 1;
 		}
 	}
 	return initialShiftedElo;
@@ -263,13 +271,15 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 					console.log(`${Math.round(r/races.length*100)}%`)
 					// console.log(players.sort((a,b) => a.position - b.position).map(p => [p.position + 1, -1 * (p.elo - shift[p.position])]))
 				}
-				Track.find({}, (e, ts) => {
-					ts.forEach((t, i) => {
-						console.log(t.name, t.elo);
-						console.log("Done.")
-					});
-					res.send("Done.");
-				})
+				// Track.find({}, (e, ts) => {
+				// 	ts.forEach((t, i) => {
+				// 		console.log(t.name, t.elo);
+				// 		console.log("Done.")
+				// 	});
+				// 	res.send("Done.");
+				// })
+				console.log("Done.")
+				res.send("Done.");
 			})
 		}
 		else{

@@ -1,6 +1,9 @@
 const mongoose = require("mongoose");
 const express = require('express');
 let ejs = require('ejs');
+const downsample = require("downsample");
+const SMA = downsample.SMA;
+const ASAP = downsample.ASAP;
 
 // const MultiElo = require('multi-elo').MultiElo;
 const MultiElo = require('./elo/index.js').MultiElo;
@@ -84,8 +87,16 @@ function absSqrt(val){
 const getAveragePosition = (races, player) => races.map(r => r.result).flat().filter(r => r.name === player).map(r => r.position).reduce((a, b) => a + b, 0) / races.filter(r => r.result.some(p => p.name === player)).length;
 
 const race = async (players, trackName) => {
+
 	const scoreboard = new Array(12);
 	players.forEach((player, i) => {
+		if(scoreboard[player.position]){
+			console.error("===================")
+			console.error("Duplicate position!!!")
+			console.error(trackName, players)
+			console.error("Please fix!!!")
+			console.error("===================")
+		}
 		scoreboard[player.position] = {name: player.name, elo: player.elo};
 	});
 	let comElo = 700 + (4 - players.length) * 100;
@@ -116,6 +127,7 @@ const race = async (players, trackName) => {
 	// let playerExpectedScores = MultiEloMarioLinear.getExpectedScores(players.map(p => p.elo));
 	// playerExpectedMultiplers = playerExpectedScores.map(v => 1 / Math.abs(1/playerExpectedScores.length - v)/100)
 	// console.log(playerExpectedScores, playerExpectedMultiplers)
+
 
 	let totalShift = 0;
 	let netShift = 0;
@@ -168,6 +180,7 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 	console.log("Connected to database");
 	const app = express()
 	app.set('view engine', 'ejs');
+	app.use(express.urlencoded({ extended: true }))
 
 	app.get('/', (req, res) => {
 		res.sendFile('index.html', {root: "."}, (err) => {
@@ -223,6 +236,7 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 	});
 
 	app.get("/graphData", (req, res) => {
+		const smooth = parseInt(req.query.smooth ?? "0");
 		Player.find({}, (err, playersData) => {
 			Race.find({}, (err2, races) => {
 				const data = {};
@@ -240,8 +254,14 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 						];
 						players[result.name].elo = players[result.name].elo.slice(1);
 					});
-
 				});
+
+				if(smooth && smooth > 0){
+					Object.keys(data).forEach((playerName, i) => {
+						data[playerName] = SMA(data[playerName], smooth);
+					});
+
+				}
 
 				res.json({
 					data,

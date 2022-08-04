@@ -319,6 +319,25 @@ mongoose.connect(process.env.CONNECTION_STRING).then(() => {
 		}
 	});
 
+	app.get("/add", (req, res) => {
+		[
+			"New York Minute",
+			"Mario Circuit 3 (SNES)",
+			"Kalimari Desert",
+			"Waluigi Pinball",
+			"Sydney Sprint",
+			"Snow Land",
+			"Mushroom Gorge",
+			"Sky-High Sundae",
+		].forEach((t, i) => {
+			new Track({
+				name: t,
+				elo: [75]
+			}).save();
+		});
+		res.send("success")
+	})
+
 
 		const tracks = [
 			"Baby Park",

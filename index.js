@@ -87,15 +87,18 @@ function absSqrt(val){
 const getAveragePosition = (races, player) => races.map(r => r.result).flat().filter(r => r.name === player).map(r => r.position).reduce((a, b) => a + b, 0) / races.filter(r => r.result.some(p => p.name === player)).length;
 
 const race = async (players, trackName) => {
-
 	const scoreboard = new Array(12);
 	players.forEach((player, i) => {
-		if(scoreboard[player.position]){
-			console.error("===================")
-			console.error("Duplicate position!!!")
-			console.error(trackName, players)
-			console.error("Please fix!!!")
-			console.error("===================")
+		// if(scoreboard[player.position]){
+			// console.error("===================")
+			// console.error("Duplicate position!!!")
+			// console.error(trackName, players)
+			// console.error("Please fix!!!")
+			// console.error("===================")
+		// }
+		while(scoreboard[player.position]){
+			player.position += 1;
+			console.log("Bumping player",player.name,"to position",player.position + 1)
 		}
 		scoreboard[player.position] = {name: player.name, elo: player.elo};
 	});
@@ -143,11 +146,18 @@ const race = async (players, trackName) => {
 			totalComps += 1;
 		}
 	}
+	if(players.length === 0){
+		totalComps = 1;
+	}
 	const offset = (2 - Math.abs(totalShift / totalComps)) + absSqrt((-1 - (netShift / totalComps))) / 4;
 	let adjusted = absSqrt(offset * 30);
 
 	if(pos.reduce((acc, nxt, i) => acc && (nxt || (i+1 > totalComps)), true)){
 		adjusted += 6;
+	}
+
+	if(players.length === 0){
+		adjusted = 0;
 	}
 
 	await new Promise((resolve, reject) => {

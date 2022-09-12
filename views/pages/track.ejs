@@ -122,6 +122,8 @@
 				<th><a href="/player/Marly">Marly</a></th>
 				<th><a href="/player/Santi">Santi</a></th>
 				<th><a href="/player/Sean">Sean</a></th>
+				<th><a href="/player/Emily">Emily</a></th>
+				<th><a href="/player/Mel">Mel</a></th>
 				<th>Multipler</th>
 			</tr></thead>
 			<tbody>
@@ -136,6 +138,8 @@
 						<th><%- addFormat((r.result.filter(p => p.name === "Marly")[0]?.position ?? -1) + 1) %></th>
 						<th><%- addFormat((r.result.filter(p => p.name === "Santi")[0]?.position ?? -1) + 1) %></th>
 						<th><%- addFormat((r.result.filter(p => p.name === "Sean")[0]?.position ?? -1) + 1) %></th>
+						<th><%- addFormat((r.result.filter(p => p.name === "Emily")[0]?.position ?? -1) + 1) %></th>
+						<th><%- addFormat((r.result.filter(p => p.name === "Mel")[0]?.position ?? -1) + 1) %></th>
 						<th><%- Math.round(track.elo[i + 1]) %>%</th>
 					</tr>
 				<% }) %>

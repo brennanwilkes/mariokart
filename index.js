@@ -47,6 +47,8 @@ const INITIAL_PLAYERS = [
 	{name: "Marly", elo: 1200},
 	{name: "Santi", elo: 1200},
 	{name: "Sean", elo: 1250},
+	{name: "Emily", elo: 1250},
+	{name: "Mel", elo: 1250},
 ];
 
 const getElo = (player, all) => new Promise((resolve, reject) => {
